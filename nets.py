@@ -35,8 +35,8 @@ class BiLSTM_CRF(nn.Module):
         self.trans.data[:, tag2idx[PAD_TAG]] = NINF
 
     def init_hidden(self, bsz):
-        return (torch.zeros(2, bsz, self.hdim // 2),
-                torch.zeros(2, bsz, self.hdim // 2))
+        return (self.trans.new(2, bsz, self.hdim // 2),
+                self.trans.new(2, bsz, self.hdim // 2))
 
     def _forward_alg(self, fts):
         bsz, tag_size = fts.shape[1], fts.shape[2]
