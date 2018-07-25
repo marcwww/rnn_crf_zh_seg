@@ -4,7 +4,7 @@ from macros import *
 import utils
 
 torch.backends.cudnn.benchmark=True
-torch.backends.cudnn.enabled = False
+torch.backends.cudnn.enabled = True
 
 class BiLSTM_CRF(nn.Module):
 
