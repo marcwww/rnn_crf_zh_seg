@@ -3,6 +3,8 @@ from torch import nn
 from macros import *
 import utils
 
+torch.backends.cudnn.benchmark=True
+
 class BiLSTM_CRF(nn.Module):
 
     def __init__(self, voc_size,
