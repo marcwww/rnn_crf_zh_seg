@@ -113,12 +113,15 @@ if __name__ == '__main__':
     opts.train_opts(parser)
     opt = parser.parse_args()
 
-    train_iter, valid_iter, INP, LBL = preproc.get_iters(ftrain=opt.ftrain,
-                                               fvalid=opt.fvalid,
-                                               bsz=opt.bsz,
-                                               min_freq=opt.min_freq)
     location = opt.gpu if torch.cuda.is_available() and opt.gpu != -1 else 'cpu'
     device = torch.device(location)
+
+    train_iter, valid_iter, INP, LBL = \
+        preproc.get_iters(ftrain=opt.ftrain,
+                          fvalid=opt.fvalid,
+                          bsz=opt.bsz,
+                          min_freq=opt.min_freq,
+                          device=opt.gpu)
 
     model = nets.BiLSTM_CRF(voc_size=len(INP.vocab.stoi),
                     idx2tag=LBL.vocab.itos,

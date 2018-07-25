@@ -5,6 +5,7 @@ from macros import *
 import os
 import io
 import crash_on_ipy
+import torch
 
 def remove_blank(path):
     lines = []
@@ -35,7 +36,8 @@ def get_dataset(path, field_inp, field_lbl):
 def get_iters(ftrain='train.utf8',
               fvalid='valid.utf8',
               bsz=64,
-              min_freq=1):
+              min_freq=1,
+              device=-1):
 
     def tokenizer_input(txt):
         res = ''.join(txt.strip().split())
@@ -77,9 +79,10 @@ def get_iters(ftrain='train.utf8',
 
     valid = get_dataset(os.path.join(DATA, fvalid), INP, LBL)
 
-    train_iter = data.Iterator(train, batch_size=bsz, sort=False, repeat=False)
+    train_iter = data.Iterator(train, batch_size=bsz, sort=False, repeat=False,
+                               device=device)
     valid_iter = data.Iterator(valid, batch_size=bsz, sort=False, repeat=False,
-                               train=False, shuffle=False)
+                               train=False, shuffle=False, device=device)
 
     return train_iter, valid_iter, INP, LBL
 

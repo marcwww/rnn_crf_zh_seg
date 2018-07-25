@@ -27,7 +27,7 @@ class BiLSTM_CRF(nn.Module):
 
         self.trans.data[tag2idx[TAG_BOS], :] = -10000
         self.trans.data[:, tag2idx[TAG_EOS]] = -10000
-        self.trans.data[tag2idx[PAD_TAG], :] = -10000
+        self.trans.data[tag2idx[PAD_TAG], :] = 0
 
     def init_hidden(self, bsz):
         return (torch.zeros(2, bsz, self.hdim // 2),
