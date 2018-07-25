@@ -12,4 +12,5 @@ TAG_END = 'E'
 DATA = './data'
 RES = './res'
 GOLD = './gold'
+NINF = -10000
 

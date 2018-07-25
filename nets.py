@@ -4,12 +4,13 @@ from macros import *
 import utils
 
 torch.backends.cudnn.benchmark=True
+torch.backends.cudnn.enabled = False
 
 class BiLSTM_CRF(nn.Module):
 
     def __init__(self, voc_size,
                  idx2tag, tag2idx,
-                 emb_dim, hdim):
+                 emb_dim, hdim, padding_idx):
         super(BiLSTM_CRF, self).__init__()
         self.emb_dim = emb_dim
         self.hdim = hdim
@@ -17,6 +18,7 @@ class BiLSTM_CRF(nn.Module):
         self.tag2idx = tag2idx
         self.idx2tag = idx2tag
         self.tag_size = len(tag2idx)
+        self.padding_idx = padding_idx
 
         self.word_embeds = nn.Embedding(voc_size, emb_dim)
         self.lstm = nn.LSTM(emb_dim, hdim // 2,
@@ -27,9 +29,10 @@ class BiLSTM_CRF(nn.Module):
         # (i,j) element: P(j->i)
         self.trans = nn.Parameter(torch.randn(self.tag_size, self.tag_size))
 
-        self.trans.data[tag2idx[TAG_BOS], :] = -10000
-        self.trans.data[:, tag2idx[TAG_EOS]] = -10000
+        self.trans.data[tag2idx[TAG_BOS], :] = NINF
+        self.trans.data[:, tag2idx[TAG_EOS]] = NINF
         self.trans.data[tag2idx[PAD_TAG], :] = 0
+        self.trans.data[:, tag2idx[PAD_TAG]] = NINF
 
     def init_hidden(self, bsz):
         return (torch.zeros(2, bsz, self.hdim // 2),
@@ -38,7 +41,7 @@ class BiLSTM_CRF(nn.Module):
     def _forward_alg(self, fts):
         bsz, tag_size = fts.shape[1], fts.shape[2]
         # init_alphas: (bsz, tag_size)
-        init_alphas = torch.full((bsz,self.tag_size), -10000.)
+        init_alphas = torch.full((bsz,self.tag_size), NINF)
         init_alphas[:][self.tag2idx[TAG_BOS]] = 0.
 
         # forward_var: (bsz, tag_size)
@@ -70,8 +73,13 @@ class BiLSTM_CRF(nn.Module):
         bsz = sen.shape[1]
         self.hid = self.init_hidden(bsz)
         embeds = self.word_embeds(sen)
+        seq_len, bsz = sen.shape[0], sen.shape[1]
+        # mask: (seq_len, bsz)
+        mask = sen.data.eq(self.padding_idx)
+        mask_fts = mask.unsqueeze(-1).expand(seq_len, bsz, self.tag_size)
         lstm_out, self.hid = self.lstm(embeds, self.hid)
         lstm_fts = self.hid2tag(lstm_out)
+        lstm_fts.masked_fill_(mask_fts, 0)
         return lstm_fts
 
     def _score_sen(self, fts, tags):
@@ -115,7 +123,7 @@ class BiLSTM_CRF(nn.Module):
         bsz, tag_size = fts.shape[1], fts.shape[2]
 
         # Initialize the viterbi variables
-        init_vvars = torch.full((bsz, self.tag_size), -10000.)
+        init_vvars = torch.full((bsz, self.tag_size), NINF)
         init_vvars[:, self.tag2idx[TAG_BOS]] = 0.
 
         # forward_var: (bsz, tag_size)

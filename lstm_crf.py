@@ -175,6 +175,7 @@ for epoch in range(300):
         sen_in = prepare_sequence(sen, w2idx)
         tars = torch.LongTensor([tag2idx[t] for t in tags])
         loss = model.neg_logllihood(sen_in, tars)
+        print(loss.item())
         loss.backward()
         optimizer.step()
 

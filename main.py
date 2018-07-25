@@ -9,6 +9,7 @@ import os
 from sklearn.metrics import precision_score, \
     recall_score, \
     f1_score
+from torch.nn.init import xavier_uniform_
 
 def insert(dictionary, tag):
     dictionary[tag] = len(dictionary)
@@ -103,6 +104,11 @@ def valid(model, valid_iter, opt):
                os.path.join(RES, opt.fpred),
                os.path.join(RES, 'score.utf8')))
 
+def init_model(model):
+    for p in model.parameters():
+        if p.dim() > 1:
+            xavier_uniform_(p)
+
 if __name__ == '__main__':
     parser = argparse.\
         ArgumentParser(description='main.py',
@@ -127,7 +133,10 @@ if __name__ == '__main__':
                     idx2tag=LBL.vocab.itos,
                     tag2idx=LBL.vocab.stoi,
                     emb_dim=opt.emb_dim,
-                    hdim=opt.hdim).to(device)
+                    hdim=opt.hdim,
+                    padding_idx=INP.vocab.stoi[PAD_CHAR]).to(device)
+
+    init_model(model)
 
     optimizer = optim.SGD(model.parameters(), lr=1e-2, weight_decay=1e-4)
     train(model, {'train': train_iter,
