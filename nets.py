@@ -31,17 +31,19 @@ class BiLSTM_CRF(nn.Module):
 
         self.trans.data[tag2idx[TAG_BOS], :] = NINF
         self.trans.data[:, tag2idx[TAG_EOS]] = NINF
-        self.trans.data[tag2idx[PAD_TAG], :] = 0
+        self.trans.data[tag2idx[PAD_TAG], :] = NINF
         self.trans.data[:, tag2idx[PAD_TAG]] = NINF
 
+        self.dummy = nn.Parameter(torch.randn(1))
+
     def init_hidden(self, bsz):
-        return (self.trans.new(2, bsz, self.hdim // 2),
-                self.trans.new(2, bsz, self.hdim // 2))
+        return (self.dummy.new(2, bsz, self.hdim // 2),
+                self.dummy.new(2, bsz, self.hdim // 2))
 
     def _forward_alg(self, fts):
         bsz, tag_size = fts.shape[1], fts.shape[2]
         # init_alphas: (bsz, tag_size)
-        init_alphas = torch.full((bsz,self.tag_size), NINF)
+        init_alphas = self.dummy.new(bsz,self.tag_size).fill_(NINF)
         init_alphas[:][self.tag2idx[TAG_BOS]] = 0.
 
         # forward_var: (bsz, tag_size)
@@ -79,7 +81,7 @@ class BiLSTM_CRF(nn.Module):
         mask_fts = mask.unsqueeze(-1).expand(seq_len, bsz, self.tag_size)
         lstm_out, self.hid = self.lstm(embeds, self.hid)
         lstm_fts = self.hid2tag(lstm_out)
-        lstm_fts.masked_fill_(mask_fts, 0)
+        lstm_fts.masked_fill_(mask_fts, NINF)
         return lstm_fts
 
     def _score_sen(self, fts, tags):
@@ -123,7 +125,7 @@ class BiLSTM_CRF(nn.Module):
         bsz, tag_size = fts.shape[1], fts.shape[2]
 
         # Initialize the viterbi variables
-        init_vvars = torch.full((bsz, self.tag_size), NINF)
+        init_vvars = self.dummy.new(bsz, self.tag_size).fill_(NINF)
         init_vvars[:, self.tag2idx[TAG_BOS]] = 0.
 
         # forward_var: (bsz, tag_size)
