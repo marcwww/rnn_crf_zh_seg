@@ -102,17 +102,20 @@ class BiLSTM_CRF(nn.Module):
 
         # tags: (seq_len, bsz)
         for i, ft in enumerate(fts):
-            indices_trans = torch.LongTensor(range(0, bsz * mtrx_elems, mtrx_elems)) + \
+            indices_trans = torch.LongTensor(range(0, bsz * mtrx_elems, mtrx_elems)).\
+                                to(self.dummy.device) + \
                       tags[i+1]*tag_size+ \
                       tags[i]
-            indices_ft = torch.LongTensor(range(0, bsz * tag_size, tag_size)) + \
+            indices_ft = torch.LongTensor(range(0, bsz * tag_size, tag_size)).\
+                                to(self.dummy.device) + \
                          tags[i+1]
 
             score = score + \
                     trans[indices_trans]+ \
                     ft.view(-1)[indices_ft]
 
-        indices_trans = torch.LongTensor(range(0, bsz * mtrx_elems, mtrx_elems)) + \
+        indices_trans = torch.LongTensor(range(0, bsz * mtrx_elems, mtrx_elems)).\
+                                to(self.dummy.device) + \
                   self.tag2idx[TAG_EOS] * tag_size + \
                   tags[-1]
 
@@ -145,7 +148,8 @@ class BiLSTM_CRF(nn.Module):
                 best_tag_id = utils.argmax(next_tag_var)
                 bptrs_t.append(best_tag_id.unsqueeze(-1))
 
-                indices = torch.LongTensor(range(0, bsz * tag_size, tag_size)) + \
+                indices = torch.LongTensor(range(0, bsz * tag_size, tag_size)).\
+                                to(self.dummy.device) + \
                           best_tag_id
                 viterbi_vars_t.append(next_tag_var.view(-1)[indices].unsqueeze(-1))
 
@@ -156,7 +160,8 @@ class BiLSTM_CRF(nn.Module):
         terminal_var = forward_var + self.trans[self.tag2idx[TAG_EOS]]
         # best_tag_id: (bsz)
         best_tag_id = utils.argmax(terminal_var)
-        indices = torch.LongTensor(range(0, bsz * tag_size, tag_size)) + \
+        indices = torch.LongTensor(range(0, bsz * tag_size, tag_size)).\
+                                to(self.dummy.device) + \
                   best_tag_id
         # path_score: (bsz)
         path_score = terminal_var.view(-1)[indices]
@@ -166,7 +171,8 @@ class BiLSTM_CRF(nn.Module):
         for bptrs_t in reversed(back_ptrs):
             # bptrs_t(list): tag_size * (bsz)
             bptrs_t = torch.cat(bptrs_t, dim=1)
-            indices = torch.LongTensor(range(0, bsz * tag_size, tag_size)) + \
+            indices = torch.LongTensor(range(0, bsz * tag_size, tag_size)).\
+                                to(self.dummy.device) + \
                       best_tag_id
             # best_tag_id: (bsz)
             best_tag_id = bptrs_t.view(-1)[indices]
@@ -174,7 +180,8 @@ class BiLSTM_CRF(nn.Module):
 
         # start: (bsz)
         start = best_path.pop()
-        assert torch.sum(start - torch.LongTensor([self.tag2idx[TAG_BOS]] * bsz)).\
+        assert torch.sum(start - torch.LongTensor([self.tag2idx[TAG_BOS]] * bsz).\
+                                to(self.dummy.device)).\
                    item() == 0
         best_path.reverse()
         return path_score, best_path
