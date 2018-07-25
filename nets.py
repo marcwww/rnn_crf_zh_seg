@@ -86,7 +86,7 @@ class BiLSTM_CRF(nn.Module):
 
     def _score_sen(self, fts, tags):
         bsz, tag_size = fts.shape[1], fts.shape[2]
-        score = torch.zeros(bsz)
+        score = self.dummy.new(bsz)
         # tags = torch.cat([torch.
         #                  LongTensor([self.tag2idx[TAG_BOS]]),
         #                   tags])
